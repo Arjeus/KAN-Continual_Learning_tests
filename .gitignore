@@ -4,3 +4,5 @@ src/efficient_kan/__pycache__/*
 src/kan/__pycache__/*
 src/kan_convolutional/__pycache__/*
 src/models/__pycache__/*
+results/sklearn_digits/classIL/trainings*
+src/*.log

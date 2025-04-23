@@ -9,10 +9,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 
 from tqdm import tqdm
 from torch import device
-from torchvision import datasets
 from torch.utils.data import DataLoader, Subset
 
 from models import *
@@ -24,9 +25,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # # DEFINE SETTINGS
 
 # %%
-out_path = os.path.join('..', 'results', 'mnist') # remove or add 'convs'
+out_path = os.path.join('..', 'results', 'sklearn_digits') # remove or add 'convs'
 strategy = "classIL"     # ["taskIL", "classIL"] classIL is harder 
-lrs = [1e-2]
+lrs = [1e-3]
 decays = [0.8]
 epochss = [10]
 models = [Efficient_KAN_Fix(strategy, device)]
@@ -40,7 +41,7 @@ longer_last_path = ""
 if longer_last_tasks:
     longer_last_path = "longer_last_tasks"
 
-out_path = os.path.join(out_path, strategy, longer_last_path, reverse_path, 'trainings')
+out_path = os.path.join(out_path, strategy, longer_last_path, reverse_path, 'trainings_0423_2')
 cfgs = []
 for model in models[:1]:
     for lr in lrs:
@@ -51,36 +52,29 @@ for model in models[:1]:
 # %% [markdown]
 # # Train and test sets
 
-# %%
-dataset = [datasets.MNIST, datasets.CIFAR10][0]
-dataset_name = dataset.__name__.lower()
-input_size = 28 * 28 if dataset == datasets.MNIST \
-    else 3 * 32 * 32 if dataset == datasets.CIFAR10 \
-    else -1
+# load sklearn digits
+digits = load_digits()
+X = torch.tensor(digits.data, dtype=torch.float32)
+y = torch.tensor(digits.target, dtype=torch.long)
+X /= X.max()   # normalize 0→1
 
-# %%
-transform = transforms.Compose([transforms.ToTensor(),
-                                # transforms.Normalize((0.5,), (0.5,))
-                                ])
-# Train set. Here we sort the MNIST by digits and disable data shuffling
-train_dataset = dataset(root='../data', train=True, download=True, transform=transform)
-sorted_indices = sorted(range(len(train_dataset) // 1), key=lambda idx: train_dataset.targets[idx])
-train_subset = Subset(train_dataset, sorted_indices)
-train_loader = DataLoader(train_subset, batch_size=64, shuffle=False)
+# split 80/20
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.5, random_state=42, stratify=y)
 
-# MultiTask training sets
+train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
+test_dataset = torch.utils.data.TensorDataset(X_test, y_test)
+
+# create 5 class‐IL tasks (2 digits each)
 train_loader_tasks = []
-indices = []
 for k in range(5):
-    indices.append(list(
-        filter(lambda idx: train_dataset.targets[idx] in range(k * 2, k * 2 + 2), range(len(train_dataset)))))
+    cls = {2*k, 2*k+1}
+    idxs = [i for i, lbl in enumerate(y_train) if int(lbl) in cls]
     train_loader_tasks.append(
-        DataLoader(Subset(train_dataset, indices[-1]), batch_size=64, shuffle=True))
+        DataLoader(Subset(train_dataset, idxs), batch_size=50, shuffle=True))
 
-# Test set
-test_dataset = dataset(root='../data', train=False, download=True, transform=transform)
-test_subset = Subset(test_dataset, range(len(test_dataset) // 1))
-test_loader = DataLoader(test_subset, batch_size=64, shuffle=False)
+# single test loader
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 if reverse_taks:
     train_loader_tasks.reverse()
@@ -165,7 +159,7 @@ def test(model, isKAN=False):
             ground_truths.extend(labels.to('cpu').numpy())
             val_accuracy += (output.argmax(dim=1) == labels).float().mean().item()
     val_accuracy /= len(test_loader)
-    print(f"Accuracy: {val_accuracy}")
+    print(f"Final Accuracy: {val_accuracy}")
     return loss.item(), ground_truths, predictions
 
 # %%
@@ -246,9 +240,9 @@ for cfg in cfgs:
 
 # %%
 # PyKAN custom training
-for lr in [1e-0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5]:
-    kan = Py_KAN()
-    test(kan)
+# for lr in [1e-0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5]:
+#     kan = Py_KAN()
+    # test(kan)
     # kan.train(lr=lr, train_loader=train_loader_tasks[0])
-
+test(model)
 

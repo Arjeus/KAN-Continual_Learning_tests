@@ -53,99 +53,80 @@ class MLPBig(nn.Module):
 class Efficient_KAN(nn.Module):
     def __init__(self, strategy, device, grid=5):
         super(Efficient_KAN, self).__init__()
-        output_size = 10
-        if strategy == "taskIL":
-            output_size = 2
-        self.layers = [28*28, 128, output_size]
+        output_size = 2 if strategy == "taskIL" else 10
+        self.layers = [64, 128, output_size]
         self.model = KAN(self.layers, grid_size=grid, sb_trainable=True, sp_trainable=True).to(device)
 
     def forward(self, x):
         x = x.view(-1, self.layers[0])
         x = self.model(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return F.log_softmax(x, dim=1)
     
 # KAN
 class Efficient_KAN_Fix(nn.Module):
     def __init__(self, strategy, device, grid=5):
         super(Efficient_KAN_Fix, self).__init__()
-        # self.layers = [input_size, 103, output_size] if dataset == datasets.MNIST \
-        output_size = 10
-        if strategy == "taskIL":
-            output_size = 2
-        self.layers = [28*28, 128, output_size]
+        output_size = 2 if strategy == "taskIL" else 10
+        self.layers = [64, 128, output_size]
         self.model = KAN(self.layers, grid_size=grid, sb_trainable=False, sp_trainable=True).to(device)
 
     def forward(self, x):
         x = x.view(-1, self.layers[0])
         x = self.model(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return F.log_softmax(x, dim=1)
 
 # KAN
 class Efficient_KAN_Fixall(nn.Module):
     def __init__(self, strategy, device, grid=5):
         super(Efficient_KAN_Fixall, self).__init__()
-        # self.layers = [input_size, 103, output_size] if dataset == datasets.MNIST \
-        output_size = 10
-        if strategy == "taskIL":
-            output_size = 2
-        self.layers = [28*28, 128, output_size] 
+        output_size = 2 if strategy == "taskIL" else 10
+        self.layers = [64, 128, output_size] 
         self.model = KAN(self.layers, grid_size=grid, sb_trainable=False, sp_trainable=False).to(device)
 
     def forward(self, x):
         x = x.view(-1, self.layers[0])
         x = self.model(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return F.log_softmax(x, dim=1)
     
 
 class Py_KAN_Fix(nn.Module):
     def __init__(self, strategy, device, grid=5):
         super(Py_KAN_Fix, self).__init__()
-        output_size = 10
-        if strategy == "taskIL":
-            output_size = 2
-        self.layers = [28*28, 128, output_size]
-        self.model = PyKAN(self.layers, grid=grid, device=device, sb_trainable=False,
-                           sp_trainable=True, bias_trainable=False, symbolic_enabled=False).to(device)
+        output_size = 2 if strategy == "taskIL" else 10
+        self.layers = [64, 128, output_size]
+        self.model = PyKAN(self.layers, grid=grid, device=device,
+                           sb_trainable=False, sp_trainable=True,
+                           bias_trainable=False, symbolic_enabled=False).to(device)
 
     def forward(self, x):
         x = x.view(-1, self.layers[0])
         x = self.model(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return F.log_softmax(x, dim=1)
     
 class Py_KAN(nn.Module):
     def __init__(self, strategy, device, grid=5):
         super(Py_KAN, self).__init__()
-        # self.layers = [input_size, 73, 10] if dataset == datasets.MNIST \
-        output_size = 10
-        if strategy == "taskIL":
-            output_size = 2
-        self.layers = [28*28, 128, output_size]
-        self.model = PyKAN(self.layers, grid=grid, device=device, sb_trainable=True,
-                           sp_trainable=False, bias_trainable=False, symbolic_enabled=False).to(device)
+        output_size = 2 if strategy == "taskIL" else 10
+        self.layers = [64, 128, output_size]
+        self.model = PyKAN(self.layers, grid=grid, device=device,
+                           sb_trainable=True, sp_trainable=False,
+                           bias_trainable=False, symbolic_enabled=False).to(device)
 
     def forward(self, x):
         x = x.view(-1, self.layers[0])
         x = self.model(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return F.log_softmax(x, dim=1)
     
 class Py_KAN_smallFix(nn.Module):
     def __init__(self, strategy, device, grid=5):
         super(Py_KAN_smallFix, self).__init__()
-        # self.layers = [input_size, 73, 10] if dataset == datasets.MNIST \
-        output_size = 10
-        if strategy == "taskIL":
-            output_size = 2
-        self.layers = [28*28, 28, output_size]
-        self.model = PyKAN(self.layers, grid=grid, device=device, sb_trainable=True,
-                           sp_trainable=False, bias_trainable=False, symbolic_enabled=False).to(device)
+        output_size = 2 if strategy == "taskIL" else 10
+        self.layers = [64, 28, output_size]
+        self.model = PyKAN(self.layers, grid=grid, device=device,
+                           sb_trainable=True, sp_trainable=False,
+                           bias_trainable=False, symbolic_enabled=False).to(device)
 
     def forward(self, x):
         x = x.view(-1, self.layers[0])
         x = self.model(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return F.log_softmax(x, dim=1)
