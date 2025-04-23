@@ -1,0 +1,6 @@
+results/mnist/classIL/trainings/*
+data/*
+src/efficient_kan/__pycache__/*
+src/kan/__pycache__/*
+src/kan_convolutional/__pycache__/*
+src/models/__pycache__/*
