@@ -6,3 +6,4 @@ src/kan_convolutional/__pycache__/*
 src/models/__pycache__/*
 results/sklearn_digits/classIL/trainings*
 src/*.log
+*.log

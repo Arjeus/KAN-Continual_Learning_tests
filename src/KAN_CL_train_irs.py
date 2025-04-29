@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
-from sklearn.datasets import load_digits
+from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
@@ -29,12 +29,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # # DEFINE SETTINGS
 
 # %%
-out_path = os.path.join('..', 'results', 'sklearn_digits') # remove or add 'convs'
+out_path = os.path.join('..', 'results', 'sklearn_iris')
 strategy = "classIL"     # ["taskIL", "classIL"] classIL is harder 
 lrs = [1e-3]
 decays = [0.8]
 epochss = [10]
-models = [Efficient_KAN_Fix(strategy, device)]
+models = [Efficient_KAN_Fix_iris(strategy, device)]
 longer_last_tasks = False
 reverse_taks = False
 
@@ -45,7 +45,7 @@ longer_last_path = ""
 if longer_last_tasks:
     longer_last_path = "longer_last_tasks"
 
-out_path = os.path.join(out_path, strategy, longer_last_path, reverse_path, 'trainings_0423_2')
+out_path = os.path.join(out_path, strategy, longer_last_path, reverse_path, 'trainings_0429_0')
 cfgs = []
 for model in models[:1]:
     for lr in lrs:
@@ -57,25 +57,25 @@ for model in models[:1]:
 # # Train and test sets
 
 # load sklearn digits
-digits = load_digits()
-X = torch.tensor(digits.data, dtype=torch.float32)
-y = torch.tensor(digits.target, dtype=torch.long)
+iris = load_iris()
+X = torch.tensor(iris.data, dtype=torch.float32)
+y = torch.tensor(iris.target, dtype=torch.long)
 X /= X.max()   # normalize 0→1
 
 # split 80/20
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.5, random_state=42, stratify=y)
+    X, y, test_size=0.75, random_state=42, stratify=y)
 
 train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
 test_dataset = torch.utils.data.TensorDataset(X_test, y_test)
 
-# create 5 class‐IL tasks (2 digits each)
+# create class-IL tasks (one Iris class per task)
 train_loader_tasks = []
-for k in range(5):
-    cls = {2*k, 2*k+1}
-    idxs = [i for i, lbl in enumerate(y_train) if int(lbl) in cls]
+num_classes = len(torch.unique(y_train))
+for k in range(num_classes):
+    idxs = [i for i, lbl in enumerate(y_train) if int(lbl) == k]
     train_loader_tasks.append(
-        DataLoader(Subset(train_dataset, idxs), batch_size=50, shuffle=True))
+        DataLoader(Subset(train_dataset, idxs), batch_size=4, shuffle=True))
 
 # single test loader
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
@@ -250,11 +250,15 @@ for cfg in cfgs:
     # kan.train(lr=lr, train_loader=train_loader_tasks[0])
 loss, labels, predictions = test(model)
 
+# %% [markdown]
+# # At the end: confusion matrix
+
 # generate and display confusion matrix
 cm = confusion_matrix(labels, predictions)
-plt.figure(figsize=(8, 6))
+classes = iris.target_names
+plt.figure(figsize=(6, 4))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-            xticklabels=range(10), yticklabels=range(10))
+            xticklabels=classes, yticklabels=classes)
 plt.xlabel('Predicted label')
 plt.ylabel('True label')
 plt.title('Confusion Matrix')

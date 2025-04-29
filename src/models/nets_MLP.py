@@ -74,6 +74,19 @@ class Efficient_KAN_Fix(nn.Module):
         x = x.view(-1, self.layers[0])
         x = self.model(x)
         return F.log_softmax(x, dim=1)
+    
+# KAN
+class Efficient_KAN_Fix_iris(nn.Module):
+    def __init__(self, strategy, device, grid=5):
+        super(Efficient_KAN_Fix_iris, self).__init__()
+        output_size = 1 if strategy == "taskIL" else 3
+        self.layers = [4, 8, output_size]
+        self.model = KAN(self.layers, grid_size=grid, sb_trainable=False, sp_trainable=True).to(device)
+
+    def forward(self, x):
+        x = x.view(-1, self.layers[0])
+        x = self.model(x)
+        return F.log_softmax(x, dim=1)
 
 # KAN
 class Efficient_KAN_Fixall(nn.Module):
